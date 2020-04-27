@@ -1,0 +1,6 @@
+[submodule "moongl"]
+	path = moongl
+	url = https://github.com/stetre/moongl
+[submodule "moonglfw"]
+	path = moonglfw
+	url = https://github.com/stetre/moonglfw

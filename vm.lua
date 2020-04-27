@@ -73,6 +73,12 @@ function VM.load(vm, program)
   end
 end
 
+function VM.fetch(vm)
+  local high_byte = vm.memory[vm.pc]
+  local low_byte = vm.memory[vm.pc + 1]
+  return high_byte << 8 | low_byte
+end
+
 function VM.emulate(vm)
   -- count down sound timer
   if vm.st > 0 then
@@ -84,11 +90,12 @@ function VM.emulate(vm)
     vm.dt = vm.dt - 1
   end
 
-  -- Fetch instruction
-  local high_byte = vm.memory[vm.pc]
-  local low_byte = vm.memory[vm.pc + 1]
-  local opcode = high_byte << 8 | low_byte
+  local opcode = VM.fetch(vm)
 
+  VM.execute(vm, opcode)
+end
+
+function VM.execute(vm, opcode)
   -- We can determine which type of instruction from the first nybble
   -- of the opcode.
   local instr = opcode & 0xF000
