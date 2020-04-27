@@ -82,19 +82,21 @@ function VM.emulate(vm)
   -- of the opcode.
   local instr = opcode & 0xF000
 
+  -- Keep track of whether we've jumped, so we can increment the program
+  -- counter safely later.
+  local jumped = false
+
   if instr == 0x0000 then
     -- 00E0 - CLS -- Clear the display.
     if opcode == 0x00E0 then
       for i = 0, DISPLAY_WIDTH * DISPLAY_HEIGHT do
         vm.display[i] = 0
-        vm.pc = vm.pc + 2
       end
 
     -- 00EE - RET -- Return from a subroutine.
     elseif opcode == 0x00EE then
       vm.pc = vm.stack[vm.sp]
       vm.sp = vm.sp - 1
-      vm.pc = vm.pc + 2
 
     else
       error(string.format("invalid opcode %X", opcode))
@@ -103,12 +105,14 @@ function VM.emulate(vm)
   -- 1nnn - JP addr -- Jump to location nnn.
   elseif instr == 0x1000 then
     vm.pc = opcode & 0x0FFF
+    jumped = true
 
   -- 2nnn - CALL addr -- Call subroutine at nnn.
   elseif instr == 0x2000 then
     vm.sp = vm.sp + 1
     vm.stack[vm.sp] = vm.pc
     vm.pc = opcode & 0x0FFF
+    jumped = true
 
   -- 3xkk - SE Vx, byte -- Skip next instruction if Vx = kk.
   elseif instr == 0x3000 then
@@ -117,8 +121,6 @@ function VM.emulate(vm)
     local vx = vm.registers[x]
 
     if vx == kk then
-      vm.pc = vm.pc + 4
-    else
       vm.pc = vm.pc + 2
     end
 
@@ -129,8 +131,6 @@ function VM.emulate(vm)
     local vx = vm.registers[x]
 
     if vx ~= kk then
-      vm.pc = vm.pc + 4
-    else
       vm.pc = vm.pc + 2
     end
 
@@ -142,8 +142,6 @@ function VM.emulate(vm)
     local vy = vm.registers[y]
 
     if vx == vy then
-      vm.pc = vm.pc + 4
-    else
       vm.pc = vm.pc + 2
     end
 
@@ -152,14 +150,12 @@ function VM.emulate(vm)
     local x = opcode >> 8 & 0x000F
     local kk = opcode & 0x00FF
     vm.registers[x] = kk
-    vm.pc = vm.pc + 2
 
   -- 7xkk - ADD Vx, byte -- Set Vx = Vx + kk.
   elseif instr == 0x7000 then
     local x = opcode >> 8 & 0x000F
     local kk = opcode & 0x00FF
     vm.registers[x] = vm.registers[x] + kk
-    vm.pc = vm.pc + 2
 
   elseif instr == 0x8000 then
     local mode = opcode & 0x000F
@@ -218,27 +214,23 @@ function VM.emulate(vm)
       error(string.format("invalid opcode %X", opcode), 2)
     end
 
-    vm.pc = vm.pc + 2
-
   -- 9xy0 - SNE Vx, Vy -- Skip next instruction if Vx != Vy.
   elseif instr == 0x9000 then
     local x = opcode >> 8 & 0x000F
     local y = opcode >> 4 & 0x000F
 
     if vm.registers[x] ~= vm.registers[y] then
-      vm.pc = vm.pc + 4
-    else
       vm.pc = vm.pc + 2
     end
 
   -- Annn - LD I, addr -- Set I = nnn.
   elseif instr == 0xA000 then
     vm.i = opcode & 0x0FFF
-    vm.pc = vm.pc + 2
 
   -- Bnnn - JP V0, addr -- Jump to location nnn + V0.
   elseif instr == 0xB000 then
     vm.pc = (opcode & 0x0FFF) + vm.registers[0]
+    jumped = true
 
   -- Cxkk - RND Vx, byte -- Set Vx = random byte AND kk.
   elseif instr == 0xC000 then
@@ -246,7 +238,6 @@ function VM.emulate(vm)
     local kk = opcode & 0x00FF
     local val = math.random(0, 0xFF)
     vm.registers[x] = val & kk
-    vm.pc = vm.pc + 2
 
   -- Dxyn - DRW Vx, Vy, nibble -- Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
   elseif instr == 0xD000 then
@@ -300,7 +291,6 @@ function VM.emulate(vm)
     end
 
     vm.registers[0xF] = collision and 1 or 0
-    vm.pc = vm.pc + 2
 
   elseif instr == 0xE000 then
     local mode = opcode & 0x00FF
@@ -310,16 +300,12 @@ function VM.emulate(vm)
     -- Ex9E - SKP Vx -- Skip next instruction if key with the value of Vx is pressed.
     if mode == 0x009E then
       if vm.keyboard[vx] then
-        vm.pc = vm.pc + 4
-      else
         vm.pc = vm.pc + 2
       end
 
     -- ExA1 - SKNP Vx -- Skip next instruction if key with the value of Vx is not pressed.
     elseif mode == 0x00A1 then
       if not vm.keyboard[vx] then
-        vm.pc = vm.pc + 4
-      else
         vm.pc = vm.pc + 2
       end
 
@@ -335,7 +321,6 @@ function VM.emulate(vm)
     -- Fx07 - LD Vx, DT -- Set Vx = delay timer value.
     if mode == 0x0007 then
       vm.registers[x] = vm.dt
-      vm.pc = vm.pc + 2
 
     -- Fx0A - LD Vx, K -- Wait for a key press, store the value of the key in Vx.
     elseif mode == 0x000A then
@@ -353,27 +338,21 @@ function VM.emulate(vm)
         return
       end
 
-      vm.pc = vm.pc + 2
-
     -- Fx15 - LD DT, Vx -- Set delay timer = Vx.
     elseif mode == 0x0015 then
       vm.dt = vx
-      vm.pc = vm.pc + 2
 
     -- Fx18 - LD ST, Vx -- Set sound timer = Vx.
     elseif mode == 0x0018 then
       vm.st = vx
-      vm.pc = vm.pc + 2
 
     -- Fx1E - ADD I, Vx -- Set I = I + Vx.
     elseif mode == 0x001E then
       vm.i = vm.i + vx
-      vm.pc = vm.pc + 2
 
     -- Fx29 - LD F, Vx -- Set I = location of sprite for digit Vx.
     elseif mode == 0x0029 then
       vm.i = vx * 5 -- each sprite is 5 bytes long
-      vm.pc = vm.pc + 2
 
     -- Fx33 - LD B, Vx -- Store BCD representation of Vx in memory locations I, I+1, and I+2.
     elseif mode == 0x0033 then
@@ -383,7 +362,6 @@ function VM.emulate(vm)
       vm.memory[vm.i] = hundreds
       vm.memory[vm.i + 1] = tens
       vm.memory[vm.i + 2] = ones
-      vm.pc = vm.pc + 2
 
     -- Fx55 - LD [I], Vx -- Store registers V0 through Vx in memory starting at location I.
     elseif mode == 0x0055 then
@@ -391,15 +369,11 @@ function VM.emulate(vm)
         vm.memory[vm.i + i] = vm.registers[i]
       end
 
-      vm.pc = vm.pc + 2
-
     -- Fx65 - LD Vx, [I] -- Read registers V0 through Vx from memory starting at location I.
     elseif mode == 0x0065 then
       for i = 0,x do
         vm.registers[i] = vm.memory[vm.i + i]
       end
-
-      vm.pc = vm.pc + 2
 
     else
       error(string.format("invalid opcode %X", opcode))
@@ -407,6 +381,10 @@ function VM.emulate(vm)
 
   else
     error(string.format("invalid opcode %X", opcode))
+  end
+
+  if not jumped then
+    vm.pc = vm.pc + 2
   end
 
   if vm.st > 0 then
