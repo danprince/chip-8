@@ -54,8 +54,8 @@ function VM.new()
   end
 
   -- store the font sprites from 0x00-0x80
-  for i, byte in ipairs(font_set) do
-    vm.memory[i] = byte
+  for i = 1, #font_set do
+    vm.memory[i - 1] = font_set[i]
   end
 
   return vm
@@ -267,7 +267,7 @@ function VM.execute(vm, opcode)
     local collision = false
 
     -- for each byte in the sprite
-    for i = 0, n do
+    for i = 0, n - 1 do
       local byte = vm.memory[vm.i + i]
 
       -- for each bit in the byte
