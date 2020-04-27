@@ -258,7 +258,7 @@ function VM.emulate(vm)
     local collision = false
 
     -- for each byte in the sprite
-    for i = 0, n - 1 do
+    for i = 0, n do
       local byte = vm.memory[vm.i + i]
 
       -- for each bit in the byte
