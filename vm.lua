@@ -74,6 +74,17 @@ function VM.load(vm, program)
 end
 
 function VM.emulate(vm)
+  -- count down sound timer
+  if vm.st > 0 then
+    vm.st = vm.st - 1
+  end
+
+  -- count down delay timer
+  if vm.dt > 0 then
+    vm.dt = vm.dt - 1
+  end
+
+  -- Fetch instruction
   local high_byte = vm.memory[vm.pc]
   local low_byte = vm.memory[vm.pc + 1]
   local opcode = high_byte << 8 | low_byte
@@ -385,14 +396,6 @@ function VM.emulate(vm)
 
   if not jumped then
     vm.pc = vm.pc + 2
-  end
-
-  if vm.st > 0 then
-    vm.st = vm.st - 1
-  end
-
-  if vm.dt > 0 then
-    vm.dt = vm.dt - 1
   end
 end
 

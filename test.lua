@@ -555,7 +555,8 @@ function test_LD_Fx07()
   VM.load(vm, { 0xF107 })
   VM.emulate(vm)
 
-  test.assertEquals(vm.registers[1], 10)
+  -- dt will have counted down by 1 when we get here
+  test.assertEquals(vm.registers[1], 9)
 end
 
 function test_LD_Fx0A()
@@ -587,8 +588,7 @@ function test_LD_Fx15()
   VM.load(vm, { 0xF015 })
   VM.emulate(vm)
 
-  -- delay timer will have decreased by 1 after the cycle finished
-  test.assertEquals(vm.dt, 0x7)
+  test.assertEquals(vm.dt, 0x8)
 end
 
 function test_LD_Fx18()
@@ -599,8 +599,7 @@ function test_LD_Fx18()
   VM.load(vm, { 0xF018 })
   VM.emulate(vm)
 
-  -- sound timer will have decreased by 1 after the cycle finished
-  test.assertEquals(vm.st, 0x7)
+  test.assertEquals(vm.st, 0x8)
 end
 
 function test_ADD_Fx1E()
