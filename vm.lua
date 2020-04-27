@@ -1,8 +1,8 @@
 local VM = {}
 
-local DISPLAY_WIDTH = 64
-local DISPLAY_HEIGHT = 32
-local MEMORY_SIZE = 0xFFF
+VM.DISPLAY_WIDTH = 64
+VM.DISPLAY_HEIGHT = 32
+VM.MEMORY_SIZE = 0xFFF
 
 local font_set = {
   0xF0, 0x90, 0x90, 0x90, 0xF0,  -- 0
@@ -37,19 +37,19 @@ function VM.new()
     st = 0  -- sound timer
   }
 
-  for i = 0, 16 do
+  for i = 0, 15 do
     vm.registers[i] = 0
   end
 
-  for i = 0, MEMORY_SIZE do
+  for i = 0, VM.MEMORY_SIZE - 1 do
     vm.memory[i] = 0
   end
 
-  for i = 0, 16 do
+  for i = 0, 15 do
     vm.keyboard[i] = false
   end
 
-  for i = 0, DISPLAY_WIDTH * DISPLAY_HEIGHT do
+  for i = 0, VM.DISPLAY_WIDTH * VM.DISPLAY_HEIGHT - 1 do
     vm.display[i] = 0
   end
 
@@ -107,7 +107,7 @@ function VM.execute(vm, opcode)
   if instr == 0x0000 then
     -- 00E0 - CLS -- Clear the display.
     if opcode == 0x00E0 then
-      for i = 0, DISPLAY_WIDTH * DISPLAY_HEIGHT do
+      for i = 0, VM.DISPLAY_WIDTH * VM.DISPLAY_HEIGHT - 1 do
         vm.display[i] = 0
       end
 
@@ -280,22 +280,22 @@ function VM.execute(vm, opcode)
         -- wrap around if pixels are drawn offscreen
 
         if dx < 0 then
-          dx = DISPLAY_WIDTH + dx
+          dx = VM.DISPLAY_WIDTH + dx
         end
 
         if dy < 0 then
-          dy = DISPLAY_HEIGHT + dy
+          dy = VM.DISPLAY_HEIGHT + dy
         end
 
-        if dx >= DISPLAY_WIDTH then
-          dx = dx - DISPLAY_WIDTH
+        if dx >= VM.DISPLAY_WIDTH then
+          dx = dx - VM.DISPLAY_WIDTH
         end
 
-        if dy >= DISPLAY_HEIGHT then
-          dy = dy - DISPLAY_HEIGHT
+        if dy >= VM.DISPLAY_HEIGHT then
+          dy = dy - VM.DISPLAY_HEIGHT
         end
 
-        local index = dx + dy * DISPLAY_WIDTH
+        local index = dx + dy * VM.DISPLAY_WIDTH
         local old_bit = vm.display[index]
         local new_bit = old_bit ~ bit
 
@@ -344,7 +344,7 @@ function VM.execute(vm, opcode)
     elseif mode == 0x000A then
       local pressed = false
 
-      for i = 0,16 do
+      for i = 0, 15 do
         if vm.keyboard[i] then
           pressed = true
           vm.registers[x] = i
@@ -383,13 +383,13 @@ function VM.execute(vm, opcode)
 
     -- Fx55 - LD [I], Vx -- Store registers V0 through Vx in memory starting at location I.
     elseif mode == 0x0055 then
-      for i = 0,x do
+      for i = 0, x do
         vm.memory[vm.i + i] = vm.registers[i]
       end
 
     -- Fx65 - LD Vx, [I] -- Read registers V0 through Vx from memory starting at location I.
     elseif mode == 0x0065 then
-      for i = 0,x do
+      for i = 0, x do
         vm.registers[i] = vm.memory[vm.i + i]
       end
 
@@ -407,9 +407,9 @@ function VM.execute(vm, opcode)
 end
 
 function VM.print_display(vm)
-  for y = 0, DISPLAY_HEIGHT do
-    for x = 0, DISPLAY_WIDTH do
-      local i = x + y * DISPLAY_WIDTH
+  for y = 0, VM.DISPLAY_HEIGHT - 1 do
+    for x = 0, VM.DISPLAY_WIDTH -1 do
+      local i = x + y * VM.DISPLAY_WIDTH
       local cell = vm.display[i]
 
       if cell == 1 then
@@ -427,7 +427,7 @@ function VM.print_stack(vm)
   if vm.sp == 0 then
     print("(empty)")
   else
-    for i = 1,vm.sp do
+    for i = 1, vm.sp do
       io.write(string.format("%1x = %4x", i, vm.stack[i]))
 
       if vm.sp == i then
