@@ -439,4 +439,10 @@ function VM.print_stack(vm)
   end
 end
 
+function VM.print_registers(vm)
+  for i = 0, 15 do
+    print(string.format("v%1x = %04x", i, vm.registers[i]))
+  end
+end
+
 return VM
