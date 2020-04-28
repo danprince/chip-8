@@ -28,8 +28,6 @@ local key_map = {
 
 local vm = VM.new()
 
-VM.load_from_disk(vm, "rom/hello_keyboard.rom")
-
 local a_position = 0
 local a_color = 1
 
@@ -231,7 +229,12 @@ local function start()
   gl.clean_program(prog)
 end
 
+local function load_from_disk(path)
+  VM.load_from_disk(vm, path)
+end
+
 return {
   init = init,
   start = start,
+  load_from_disk = load_from_disk,
 }
