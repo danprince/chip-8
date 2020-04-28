@@ -34,7 +34,8 @@ function VM.new()
     i = 0,  -- memory index register
     sp = 0, -- stack pointer
     dt = 0, -- delay timer
-    st = 0  -- sound timer
+    st = 0, -- sound timer
+    redraw = false, -- flag set when the display has updated
   }
 
   for i = 0, 15 do
@@ -110,6 +111,8 @@ function VM.execute(vm, opcode)
       for i = 0, VM.DISPLAY_WIDTH * VM.DISPLAY_HEIGHT - 1 do
         vm.display[i] = 0
       end
+
+      vm.redraw = true
 
     -- 00EE - RET -- Return from a subroutine.
     elseif opcode == 0x00EE then
@@ -266,8 +269,11 @@ function VM.execute(vm, opcode)
     local vy = vm.registers[y]
     local collision = false
 
+    -- we need to redraw the display
+    vm.redraw = true
+
     -- for each byte in the sprite
-    for i = 0, n - 1 do
+    for i = 0, n do
       local byte = vm.memory[vm.i + i]
 
       -- for each bit in the byte

@@ -30,11 +30,10 @@ local vm = VM.new()
 
 VM.load(vm, {
   -- render the key that is pressed
-
-  0x00E0, -- clear screen
+ 
   0xF00A, -- store key in v0
+  0x00E0, -- clear screen
   0xF029, -- set sprite to char in v0
-  0xE0A1, -- skip if key in v0 is not down
   0xD124, -- draw sprite at v1, v2
   0x1200, -- loop
 })
@@ -226,10 +225,12 @@ local function start()
       VM.emulate(vm)
     end)
 
-    flush_display()
-    render_display()
-
-    glfw.swap_buffers(window)
+    if vm.redraw then
+      vm.redraw = false
+      flush_display()
+      render_display()
+      glfw.swap_buffers(window)
+    end
   end
 
   gl.delete_buffers(vbo_pos)
