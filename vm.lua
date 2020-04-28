@@ -74,6 +74,22 @@ function VM.load(vm, program)
   end
 end
 
+function VM.load_from_disk(vm, path)
+  local file = assert(io.open(path, "rb"))
+  local i = 0x200
+
+  while true do
+    local byte = file:read(1)
+
+    if not byte then
+      break
+    end
+
+    vm.memory[i] = string.byte(byte)
+    i = i + 1
+  end
+end
+
 function VM.fetch(vm)
   local high_byte = vm.memory[vm.pc]
   local low_byte = vm.memory[vm.pc + 1]

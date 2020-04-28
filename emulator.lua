@@ -28,15 +28,7 @@ local key_map = {
 
 local vm = VM.new()
 
-VM.load(vm, {
-  -- render the key that is pressed
- 
-  0xF00A, -- store key in v0
-  0x00E0, -- clear screen
-  0xF029, -- set sprite to char in v0
-  0xD124, -- draw sprite at v1, v2
-  0x1200, -- loop
-})
+VM.load_from_disk(vm, "rom/hello_keyboard.rom")
 
 local a_position = 0
 local a_color = 1
