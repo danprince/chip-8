@@ -7,26 +7,36 @@ local CELL_HEIGHT = 5
 local WINDOW_WIDTH = VM.DISPLAY_WIDTH * CELL_WIDTH
 local WINDOW_HEIGHT = VM.DISPLAY_HEIGHT * CELL_HEIGHT
 
+local key_map = {
+  ["0"] = 0x0,
+  ["1"] = 0x1,
+  ["2"] = 0x2,
+  ["3"] = 0x3,
+  ["4"] = 0x4,
+  ["5"] = 0x5,
+  ["6"] = 0x6,
+  ["7"] = 0x7,
+  ["8"] = 0x8,
+  ["9"] = 0x9,
+  ["a"] = 0xA,
+  ["b"] = 0xB,
+  ["c"] = 0xC,
+  ["d"] = 0xD,
+  ["e"] = 0xE,
+  ["f"] = 0xF,
+}
+
 local vm = VM.new()
 
 VM.load(vm, {
-  -- draw the characters 0-9
+  -- render the key that is pressed
 
-  0x6000, -- set v0 to 0 (char)
-  0x6101, -- set v1 to 1 (inc)
-
-  0x6200, -- set v2 to 0 (x)
-  0x6300, -- set v3 to 0 (y)
-  0x6405, -- set v4 to 5 (x step)
-
-  0xF029, -- move i to sprite in v0
-  0xD235, -- draw 5 bytes at v2, v3
-
-  0x8014, -- set v0 to v0 + v1
-  0x8244, -- set v2 to v2 + v4
-
-  0x300A, -- skip next instruction if v0 is A
-  0x120A, -- loop
+  0x00E0, -- clear screen
+  0xF00A, -- store key in v0
+  0xF029, -- set sprite to char in v0
+  0xE0A1, -- skip if key in v0 is not down
+  0xD124, -- draw sprite at v1, v2
+  0x1200, -- loop
 })
 
 local a_position = 0
@@ -121,7 +131,6 @@ local function init_cell_vertices()
   end
 end
 
-
 local function flush_display()
   -- Update the color buffer from the display
 
@@ -161,17 +170,25 @@ local function render_display()
   gl.unbind_vertex_array()
 end
 
+local function handle_key(window, key, scancode, action)
+  local key_index = key_map[key]
+
+  if key_index then
+    if action == "press" then
+      vm.keyboard[key_index] = true
+    elseif action == "release" then
+      vm.keyboard[key_index] = false
+    end
+  end
+end
+
 local function init()
   glfw.window_hint("context version major", 3)
   glfw.window_hint("context version minor", 3)
   glfw.window_hint("opengl profile", "core")
 
-  window = glfw.create_window(
-    WINDOW_WIDTH,
-    WINDOW_HEIGHT,
-    "Chip-8 Emulator"
-  )
-
+  window = glfw.create_window(WINDOW_WIDTH, WINDOW_HEIGHT, "Chip-8 Emulator")
+  glfw.set_key_callback(window, handle_key)
   glfw.make_context_current(window)
   gl.init()
 
